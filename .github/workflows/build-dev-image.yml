@@ -1,0 +1,108 @@
+name: Build and Push Dev Container Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/Dockerfile'
+      - '.github/workflows/build-dev-image.yml'
+      - 'devbox.json'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    paths:
+      - '.devcontainer/Dockerfile'
+      - '.github/workflows/build-dev-image.yml'
+      - 'devbox.json'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BASE: effortlesssteven/ytp-devcontainer
+  RUST_VERSION_TAG_PART: "1.86"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: latest
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}
+          tags: |
+            type=schedule,pattern=monthly-{{date 'YYYYMMDD'}}
+            type=ref,event=branch,pattern={{raw}}
+            type=ref,event=pr,prefix=pr-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            0.1.0-rust${{ env.RUST_VERSION_TAG_PART }}
+            latest-rust${{ env.RUST_VERSION_TAG_PART }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}:buildcache
+          cache-to: type=gha,mode=max
+          build-args: |
+            RUST_TOOLCHAIN_VERSION=${{ env.RUST_VERSION_TAG_PART }}.0
+
+      # Optional: Sign the image using Cosign and OIDC (more advanced setup)
+      # - name: Install Cosign
+      #   uses: sigstore/cosign-installer@v3
+      # - name: Sign the published Docker image
+      #   env:
+      #     COSIGN_EXPERIMENTAL: "true" # For OIDC
+      #   run: cosign sign ${{ steps.meta.outputs.tags }}
+
+      - name: Echo image details
+        run: |
+          echo "All tags:"
+          echo "${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "Labels:"
+          echo "${{ steps.meta.outputs.labels }}" 

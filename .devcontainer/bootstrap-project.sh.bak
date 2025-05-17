@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euxo pipefail # Exit on error, print commands, error on unset var, pipefail
+
+echo "--- [bootstrap-project.sh] Starting (User: $(id -u -n), Workspace: $1) ---"
+WORKSPACE_FOLDER="${1}"
+cd "${WORKSPACE_FOLDER}"
+
+# Ensure .envrc exists and has 'use devbox'
+echo "[bootstrap-project.sh] Ensuring .envrc configuration..."
+if [ ! -f ".envrc" ]; then
+  echo "use devbox" > .envrc
+  echo "[bootstrap-project.sh] Created .envrc with 'use devbox'."
+elif ! grep -q "use devbox" ".envrc"; then
+  echo -e "\nuse devbox" >> .envrc
+  echo "[bootstrap-project.sh] Added 'use devbox' to existing .envrc."
+fi
+
+# Hash key project files to determine if full setup is needed
+# This makes the script idempotent.
+STATE_FILE_DIR=".devcontainer" # Store hash inside .devcontainer
+STATE_FILE="${STATE_FILE_DIR}/.devbox.bootstrap.hash"
+mkdir -p "${STATE_FILE_DIR}"
+
+# Add more files to hash if their changes should trigger a re-run of perform_initial_project_setup
+FILES_TO_HASH="devbox.json Cargo.toml Cargo.lock"
+CURRENT_HASH=""
+if command -v sha256sum &> /dev/null; then
+    CURRENT_HASH=$(cat $FILES_TO_HASH 2>/dev/null | sha256sum | awk '{print $1}')
+else # Fallback for systems without sha256sum (e.g. macOS might need shasum -a 256)
+    CURRENT_HASH=$(cat $FILES_TO_HASH 2>/dev/null | md5sum | awk '{print $1}') # Less ideal, but a fallback
+fi
+
+
+if [[ -f "$STATE_FILE" && "$(cat "$STATE_FILE")" == "$CURRENT_HASH" ]]; then
+  echo "[bootstrap-project.sh] Project dependencies and setup appear up-to-date (hash match). Triggering direnv allow."
+  direnv allow . # Still run direnv allow to ensure hooks and env are active
+  echo "[bootstrap-project.sh] Bootstrap complete (cached)."
+  exit 0
+fi
+
+echo "[bootstrap-project.sh] Configuration changed or first run. Running full project setup..."
+
+echo "[bootstrap-project.sh] Allowing direnv to load .envrc (will trigger devbox package install if first time for this project)..."
+direnv allow . # This loads .envrc, which runs 'use devbox', triggering 'devbox install' if packages are missing
+
+echo "[bootstrap-project.sh] Running 'devbox run perform_initial_project_setup' (e.g., cargo fetch)..."
+# This script in devbox.json is responsible for tasks like initial cargo fetch.
+# devbox run implies 'devbox install' has already ensured packages are present.
+devbox run perform_initial_project_setup
+
+echo "$CURRENT_HASH" > "$STATE_FILE"
+echo "[bootstrap-project.sh] Project setup complete. Hash updated."
+echo "--- [bootstrap-project.sh] Finished successfully ---" 
