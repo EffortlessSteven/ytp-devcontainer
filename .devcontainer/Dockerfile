@@ -105,6 +105,21 @@ COPY --from=nix_installer /nix /nix
 RUN echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME}
 
+# Create user directories with proper ownership as root first
+RUN mkdir -p \
+    /home/${USERNAME}/.config \
+    /home/${USERNAME}/.cache \
+    /home/${USERNAME}/.local/share \
+    /home/${USERNAME}/.local/share/direnv \
+    /home/${USERNAME}/.cargo \
+    /home/${USERNAME}/.rustup \
+    && chown -R ${USERNAME}:${USERNAME} \
+       /home/${USERNAME}/.config \
+       /home/${USERNAME}/.cache \
+       /home/${USERNAME}/.local \
+       /home/${USERNAME}/.cargo \
+       /home/${USERNAME}/.rustup
+
 USER ${USERNAME}
 ENV PATH="/home/${USERNAME}/.nix-profile/bin:/home/${USERNAME}/.cargo/bin:${PATH}"
 ENV CARGO_HOME="/home/${USERNAME}/.cargo"

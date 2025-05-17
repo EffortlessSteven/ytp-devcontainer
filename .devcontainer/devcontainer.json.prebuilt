@@ -12,6 +12,8 @@
 
   "postCreateCommand": "bash -c 'cd \"${containerWorkspaceFolder}\" && bash .devcontainer/postCreate-prebuilt.sh \"${containerWorkspaceFolder}\"'",
 
+  "updateContentCommand": "bash -c 'cd \"${containerWorkspaceFolder}\" && direnv allow .'",
+
   "postAttachCommand": "bash -c 'echo \"[PostAttach] Allowing direnv in ${containerWorkspaceFolder}...\" && cd \"${containerWorkspaceFolder}\" && direnv allow . && echo \"[PostAttach] Direnv allowed. Devbox env should be active.\"'",
 
   "customizations": {

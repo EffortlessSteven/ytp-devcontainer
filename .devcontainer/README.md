@@ -42,6 +42,17 @@ Our solution uses two key approaches:
 - **Early in postCreate.sh**: The vscode user leverages passwordless sudo to claim ownership of its home directories
 - **Explicit Chown**: Critical directories under $HOME are explicitly owned by the vscode user
 
+### Handling direnv Permissions
+
+The direnv permission strategy employs multiple safeguards:
+
+1. **Dockerfile stage**: Creates `/home/vscode/.local/share/direnv` with proper ownership as root
+2. **postCreate-prebuilt.sh**: Performs additional permission fixes after container initialization 
+3. **Fallback mechanisms**: Uses conditional sudo to ensure directory creation works even without elevated permissions
+4. **Lifecycle-aware commands**: updateContentCommand is simplified to only perform direnv allow after directories are created
+
+This multi-layered approach ensures that volume mounts or feature installations don't interfere with direnv's ability to create and manage its allow directory.
+
 ## Troubleshooting
 
 Common issues and solutions:

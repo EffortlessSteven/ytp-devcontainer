@@ -6,16 +6,38 @@ set -euo pipefail
 
 echo "--- [postCreate-prebuilt.sh] start (user: $(id -un), pwd: $PWD) ---"
 
-# Essential safety check for permissions on mounted volumes
-echo "[postCreate-prebuilt.sh] Ensuring vscode user owns critical dotfiles..."
-if [ ! -w "$HOME/.cargo" ] || [ ! -w "$HOME/.rustup" ]; then
-  sudo chown -R "$(id -u):$(id -g)" "$HOME/.cargo" "$HOME/.rustup" 2>/dev/null || true
-  echo "[postCreate-prebuilt.sh] Fixed permissions on cargo/rustup directories."
+# Essential safety check for permissions on mounted volumes and home directories
+echo "[postCreate-prebuilt.sh] Ensuring vscode user owns critical directories..."
+if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  # Use sudo to forcefully fix permissions if available
+  sudo mkdir -p \
+    "$HOME/.config" \
+    "$HOME/.cache" \
+    "$HOME/.local/share" \
+    "$HOME/.local/share/direnv" \
+    "$HOME/.cargo" \
+    "$HOME/.rustup"
+  
+  sudo chown -R "$(id -u):$(id -g)" \
+    "$HOME/.config" \
+    "$HOME/.cache" \
+    "$HOME/.local" \
+    "$HOME/.cargo" \
+    "$HOME/.rustup"
+  
+  echo "[postCreate-prebuilt.sh] Fixed permissions with sudo."
+else
+  # Try to fix permissions without sudo as a fallback
+  mkdir -p \
+    "$HOME/.config" \
+    "$HOME/.cache" \
+    "$HOME/.local/share" \
+    "$HOME/.local/share/direnv" \
+    "$HOME/.cargo" \
+    "$HOME/.rustup" 2>/dev/null || true
+  
+  echo "[postCreate-prebuilt.sh] Attempted to fix permissions without sudo."
 fi
-
-# Ensure .direnv exists and is writable
-mkdir -p "$HOME/.local/share/direnv"
-chmod 755 "$HOME/.local/share/direnv"
 
 # Setup workspace
 WORKSPACE_FOLDER="${1:-$PWD}"
