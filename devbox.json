@@ -1,0 +1,26 @@
+{
+  "packages": [
+    "rustup",
+    "gcc@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo '[Devbox Init Hook] Shell for ytp-devcontainer activated.'",
+      "RUST_VERSION_FROM_FILE=$(grep '^channel *=' rust-toolchain.toml | cut -d '\"' -f 2)",
+      "echo \"[Devbox Init Hook] Target Rust version from rust-toolchain.toml: $RUST_VERSION_FROM_FILE\"",
+      "if ! rustup toolchain list | grep -q \"^${RUST_VERSION_FROM_FILE}-\"; then rustup toolchain install \"$RUST_VERSION_FROM_FILE\" --profile minimal --component clippy --component rustfmt; fi",
+      "rustup default \"$RUST_VERSION_FROM_FILE\"",
+      "echo '[Devbox Init Hook] Active toolchain details:'",
+      "rustc --version || echo 'WARNING: rustc not found in PATH!'",
+      "cargo --version || echo 'WARNING: cargo not found in PATH!'",
+      "export CARGO_TERM_COLOR=always"
+    ],
+    "scripts": {
+      "perform_initial_project_setup": "echo '[Devbox Script: perform_initial_project_setup] Fetching Rust dependencies...' && cargo fetch && echo '[Devbox Script: perform_initial_project_setup] Dependencies fetched.'",
+      "test": "cargo test --all-targets --all-features",
+      "build": "cargo build --release",
+      "clippy": "cargo clippy --all-targets --all-features -- -D warnings",
+      "fmt_check": "cargo fmt --all -- --check"
+    }
+  }
+} 

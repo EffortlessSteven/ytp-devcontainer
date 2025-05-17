@@ -1,0 +1,48 @@
+{
+  "name": "YTP Dev Env (Pre-built - Rust 1.86)",
+  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.0",
+
+  "initializeCommand": "echo '[InitializeCommand] Using pre-built image. Base setup expected to be complete.'",
+
+  "containerEnv": {
+    "DEBIAN_FRONTEND": "noninteractive"
+  },
+
+  "onCreateCommand": "echo '[OnCreateCommand] Using pre-built image with Nix, Devbox, and Rust 1.86 pre-installed.'",
+
+  "postCreateCommand": "bash -c 'cd \"${containerWorkspaceFolder}\" && bash .devcontainer/postCreate-prebuilt.sh \"${containerWorkspaceFolder}\"'",
+
+  "postAttachCommand": "bash -c 'echo \"[PostAttach] Allowing direnv in ${containerWorkspaceFolder}...\" && cd \"${containerWorkspaceFolder}\" && direnv allow . && echo \"[PostAttach] Direnv allowed. Devbox env should be active.\"'",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash",
+            "args": ["--login"]
+          }
+        },
+        "rust-analyzer.check.command": "clippy"
+      },
+      "extensions": [
+        "matklad.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "eamodio.gitlens",
+        "EditorConfig.EditorConfig",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "mounts": [
+    "source=${env:HOME}${env:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=ytp-devbox-global-cache,target=/home/vscode/.local/share/devbox/global,type=volume",
+    "source=ytp-cargo-home-cache,target=/home/vscode/.cargo,type=volume",
+    "source=ytp-rustup-home-cache,target=/home/vscode/.rustup,type=volume"
+  ]
+} 

@@ -1,0 +1,11 @@
+# Shell scripts should have LF line endings and executable bit set
+*.sh text eol=lf
+.devcontainer/*.sh text eol=lf
+
+# Ensure scripts have execution permissions preserved
+*.sh          text eol=lf
+.devcontainer/*.sh text eol=lf
+
+# Mark bash scripts as executable on checkout
+*.sh          text eol=lf executable
+.devcontainer/*.sh text eol=lf executable 
