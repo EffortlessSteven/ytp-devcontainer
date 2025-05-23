@@ -6,7 +6,7 @@
 ```jsonc
 {
   "name": "YTP CLI Development",
-  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.2",
+  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3",
   
   // Optional: Project-specific environment variables
   "containerEnv": {
@@ -98,7 +98,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.2
+      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
     steps:
       - uses: actions/checkout@v4
       - name: Run CI pipeline
@@ -165,7 +165,7 @@ devbox run build
 
 ## 8. Base Image Contents
 
-For reference, the base image (`ghcr.io/effortlesssteven/ytp-devcontainer:0.1.2`) includes:
+For reference, the base image (`ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3`) includes:
 
 **Pre-installed Tools:**
 - Rust 1.86.0 toolchain with clippy, rustfmt, rust-analyzer
@@ -188,3 +188,9 @@ For reference, the base image (`ghcr.io/effortlesssteven/ytp-devcontainer:0.1.2`
 - Git autofetch and proper exclusions
 
 This provides a complete, batteries-included Rust development environment with minimal consumer-side configuration required.
+
+### Getting Help
+1. Check container logs: `docker logs <container-id>`
+2. Verify devcontainer configuration syntax
+3. Ensure you're using the latest stable image: `0.1.3`
+4. Check GitHub Actions logs for CI issues
