@@ -4,7 +4,6 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "initializeCommand": ".devcontainer/initialize.sh",
   "features": {
     "ghcr.io/devcontainers/features/nix:1": { "enableFlakes": true },
     "ghcr.io/devcontainers-contrib/features/direnv:1": { "version": "latest" }
@@ -13,9 +12,7 @@
     "DEBIAN_FRONTEND": "noninteractive"
   },
   "onCreateCommand": "echo '[OnCreate] initial environment ready.'",
-  "postStartCommand": "bash -eux .devcontainer/setup-nix.sh",
   "postCreateCommand": "bash -eux .devcontainer/postCreate.sh \"$PWD\"",
-  "postAttachCommand": "echo '[PostAttach] allowing direnv...' && direnv allow .",
   "customizations": {
     "vscode": {
       "settings": {

@@ -14,7 +14,7 @@ This image is tuned for fast local iteration, reproducible CI environments, and 
 - 📦 **Pinned toolchain** using `rust-toolchain.toml` and Devbox scripts
 - 🧪 **CI-ready** container with preinstalled testing and formatting tools
 - 🧼 **Isolated from host setup** via Nix + Direnv
-- 🚫 **Not intended for unrelated Rust projects** — please fork if needed
+- 🚫 **Not intended for unrelated Rust projects**, please fork if needed
 
 ---
 
@@ -51,13 +51,13 @@ docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.0
 
 ### 🛠 Runtime via Devbox Scripts
 
-| Script                          | Description                               |
-| ------------------------------- | ----------------------------------------- |
-| `test`                          | `cargo test --all-targets --all-features` |
-| `build`                         | `cargo build --release`                   |
-| `clippy`                        | `cargo clippy -- -D warnings`             |
-| `fmt_check`                     | `cargo fmt --all -- --check`              |
-| `perform_initial_project_setup` | `cargo fetch` to prewarm crates.io cache  |
+| Script                            | Description                               |
+| --------------------------------- | ----------------------------------------- |
+| `test`                            | `cargo test --all-targets --all-features` |
+| `build`                           | `cargo build --release`                   |
+| `clippy`                          | `cargo clippy --all-targets --all-features -- -D warnings` |
+| `fmt_check`                       | `cargo fmt --all -- --check`              |
+| `perform_initial_project_setup`   | `cargo fetch` to prewarm crates.io cache  |
 
 ---
 
@@ -132,7 +132,7 @@ jobs:
 | Path                                   | Purpose                               |
 | -------------------------------------- | ------------------------------------- |
 | `.devcontainer/Dockerfile`             | Prebuilds full environment with cache |
-| `.github/workflows/build-image.yml`    | GHCR publish via GitHub Actions       |
+| `.github/workflows/build-dev-image.yml` | GHCR publish via GitHub Actions       |
 | `devbox.json`                          | Tools and Devbox scripts              |
 | `rust-toolchain.toml`                  | Canonical Rust version and components |
 | `.envrc`                               | Direnv auto-activation                |

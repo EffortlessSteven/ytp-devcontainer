@@ -7,6 +7,10 @@ set -euxo pipefail
 echo "--- [postCreate.sh] start (user: $(id -un), group: $(id -gn), uid: $(id -u), gid: $(id -g), pwd: $PWD) ---"
 echo "HOME directory: $HOME"
 
+# Ensure Git uses container tools, not host Windows paths
+unset GIT_SSH 2>/dev/null || true
+export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+
 #
 # STEP 0: Force-fix ownership of essential user-specific directories
 # This is crucial because features or volume mounts might have created/altered
@@ -27,6 +31,13 @@ sudo chown -R "$(id -u):$(id -g)" \
   "$HOME/.local" \
   "$HOME/.cargo" \
   "$HOME/.rustup"
+
+# Explicitly ensure .gitconfig is owned by vscode user if it exists
+# This is important if it was created by root earlier or by a different mechanism
+if [ -f "$HOME/.gitconfig" ]; then
+    echo "[postCreate.sh] Ensuring $HOME/.gitconfig is owned by vscode user..."
+    sudo chown "$(id -u):$(id -g)" "$HOME/.gitconfig"
+fi
 
 echo "[postCreate.sh] Ensuring specific subdirectories for direnv and devbox..."
 sudo mkdir -p "$HOME/.local/share/direnv" "$HOME/.cache/devbox" "$HOME/.local/share/devbox/global"
@@ -131,5 +142,7 @@ fi
 
 echo "[postCreate.sh] Final 'direnv allow .' to ensure env is active for VS Code."
 direnv allow .
+
+# Git safe.directory configuration moved to postAttach.sh to avoid race conditions with VS Code
 
 echo "--- [postCreate.sh] Finished successfully ---" 
