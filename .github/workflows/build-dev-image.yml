@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
     paths:
       - '.devcontainer/Dockerfile'
       - '.github/workflows/build-dev-image.yml'
@@ -67,10 +69,9 @@ jobs:
             type=schedule,pattern=monthly-{{date 'YYYYMMDD'}}
             type=ref,event=branch,pattern={{raw}}
             type=ref,event=pr,prefix=pr-
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            0.1.3-rust${{ env.RUST_VERSION_TAG_PART }}
-            latest-rust${{ env.RUST_VERSION_TAG_PART }}
+            type=semver,pattern={{version}}-rust${{ env.RUST_VERSION_TAG_PART }}
+            type=semver,pattern={{major}}.{{minor}}-rust${{ env.RUST_VERSION_TAG_PART }}
+            type=raw,value=latest-rust${{ env.RUST_VERSION_TAG_PART }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           labels: ${{ steps.meta.outputs.labels }}
 
