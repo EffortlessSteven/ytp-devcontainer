@@ -62,34 +62,28 @@ else
     echo "[Warning][postCreate.sh] Standard Nix profile scripts not found. Nix commands might rely on PATH set by features."
 fi
 echo "[postCreate.sh] PATH after attempting Nix profile source: $PATH"
-command -v nix-channel >/dev/null 2>&1 || { echo "[Error][postCreate.sh] nix-channel command not found! Nix setup is incomplete for user $(id -un)." >&2; exit 1; }
 
 #
-# STEP 2: User-specific Nix and Devbox setup
-# These commands now run as 'vscode' and should have permissions to their respective directories.
+# STEP 2: Verify essential dev tools are available
 #
-echo "[postCreate.sh] Ensuring 'nixpkgs' channel points to nixpkgs-unstable..."
-if nix-channel --list | grep -q '^nixpkgs '; then
-    echo "[postCreate.sh] Pre-existing 'nixpkgs' channel found. Removing."
-    nix-channel --remove nixpkgs
-else
-    echo "[postCreate.sh] No pre-existing 'nixpkgs' channel found."
-fi
-nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
-nix-channel --update nixpkgs
-echo "[postCreate.sh] 'nixpkgs' channel (nixpkgs-unstable) configured and updated."
-
-echo "[postCreate.sh] Ensuring Devbox is installed via Nix (as user: $(id -un))..."
+echo "[postCreate.sh] Verifying Devbox is available (installed at build-time)..."
 if ! command -v devbox &> /dev/null; then
-    echo "[postCreate.sh] Devbox not found, installing via nix-env from 'nixpkgs' channel..."
-    nix-env -iA nixpkgs.devbox
-    echo "[postCreate.sh] Devbox installed."
+    echo "[Error][postCreate.sh] Devbox not found in PATH! Build-time installation failed." >&2
+    exit 1
 else
-    echo "[postCreate.sh] Devbox already available: $(command -v devbox)"
+    echo "[postCreate.sh] Devbox available: $(command -v devbox)"
 fi
 
 echo "[postCreate.sh] Confirming Devbox version..."
 devbox version
+
+echo "[postCreate.sh] Verifying direnv is available..."
+if ! command -v direnv &> /dev/null; then
+    echo "[Error][postCreate.sh] Direnv not found in PATH! Build-time installation failed." >&2
+    exit 1
+else
+    echo "[postCreate.sh] Direnv available: $(command -v direnv)"
+fi
 
 #
 # STEP 3: Project-specific setup
@@ -130,8 +124,8 @@ if [[ -f "$STATE_FILE" && "$(cat "$STATE_FILE")" == "$CURRENT_HASH" && -n "$CURR
 else
   echo "[postCreate.sh] Running 'direnv allow .' to ensure environment is loaded for devbox run..."
   direnv allow . # Allow direnv to hook and load Devbox env with packages
-  echo "[postCreate.sh] Running 'devbox run perform_initial_project_setup' (e.g., cargo fetch)..."
-  devbox run perform_initial_project_setup # This script is in devbox.json
+  echo "[postCreate.sh] Running 'cargo fetch' to fetch YTP dependencies (bypassing devbox due to Nix permissions)..."
+  cargo fetch # Run directly since Rust is pre-installed
   if [ -n "$CURRENT_HASH" ]; then
       echo "$CURRENT_HASH" > "$STATE_FILE"
       echo "[postCreate.sh] Project setup complete. Hash updated."

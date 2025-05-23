@@ -4,7 +4,7 @@
 ARG NIXPKGS_CHANNEL=24.11
 
 # --- Stage 0: Base OS & Essential System Packages ---
-FROM --platform=linux/amd64 mcr.microsoft.com/devcontainers/base:1-bookworm AS base_os
+FROM mcr.microsoft.com/devcontainers/base:1-bookworm AS base_os
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -43,22 +43,19 @@ RUN mkdir -p /etc/nix && \
 RUN if ! getent group nixbld >/dev/null; then groupadd -r nixbld; fi && \
     usermod -aG nixbld "${USERNAME}"
 
-# Add NixOS channel for legacy nix-env package installation
-RUN nix-channel --add https://nixos.org/channels/nixos-${NIXPKGS_CHANNEL} nixpkgs && \
-    nix-channel --update
-
-# --- Stage 2: Global Dev Tools Installation (via Nix, as USER root) ---
-# This ensures direnv and devbox are in the system's Nix profile.
+# --- Stage 2: Global Dev Tools Installation ---
 FROM nix_installer AS global_tools
 ARG USERNAME=vscode
-# USER root (already root from nix_installer stage)
 
-# Source Nix environment for root before running nix-env
-# and ensure nix-daemon is running or simulated for this command.
-RUN . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
-    echo 'Installing direnv and devbox into system Nix profile...' && \
-    nix-env -iA nixpkgs.direnv nixpkgs.devbox && \
-    echo 'direnv and devbox installed.'
+# Install direnv using official installer (more reliable than Nix for this use case)
+RUN curl -sfL https://direnv.net/install.sh | bash
+
+# Install devbox using official installer (more reliable than Nix)
+RUN curl -fsSL https://get.jetpack.io/devbox | bash -s -- -f
+
+# Verify installations
+RUN which direnv && direnv --version
+RUN which devbox && devbox version
 
 # --- Stage 3: Rust Toolchain & Cargo Cache Warming (as USER vscode) ---
 # This stage is responsible for setting up Rust for the vscode user and warming caches.
@@ -74,10 +71,30 @@ ENV RUSTUP_HOME="/home/${USERNAME}/.rustup"
 ENV CARGO_HOME="/home/${USERNAME}/.cargo"
 ENV PATH="/home/${USERNAME}/.cargo/bin:${PATH}"
 
+# Configure Cargo for maximum operational speed
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+ENV CARGO_TERM_COLOR=always
+
 # Install rustup and the specified Rust toolchain
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none && \
     rustup default "${RUST_TOOLCHAIN_VERSION}" && \
     rustup component add clippy rustfmt
+
+# Create optimized Cargo configuration for fast builds and operations
+RUN mkdir -p "${CARGO_HOME}" && \
+    echo '[build]' > "${CARGO_HOME}/config.toml" && \
+    echo 'rustflags = ["-C", "link-arg=-fuse-ld=lld"]' >> "${CARGO_HOME}/config.toml" && \
+    echo '' >> "${CARGO_HOME}/config.toml" && \
+    echo '[profile.dev]' >> "${CARGO_HOME}/config.toml" && \
+    echo 'incremental = true' >> "${CARGO_HOME}/config.toml" && \
+    echo '' >> "${CARGO_HOME}/config.toml" && \
+    echo '[registries.crates-io]' >> "${CARGO_HOME}/config.toml" && \
+    echo 'protocol = "sparse"' >> "${CARGO_HOME}/config.toml"
+
+# Pre-configure direnv for common workspace paths to reduce startup time
+RUN mkdir -p /home/${USERNAME}/.local/share/direnv/allow && \
+    echo "/workspaces" > /home/${USERNAME}/.local/share/direnv/allow/$(echo "/workspaces" | sha256sum | cut -d' ' -f1)
 
 # Create a temporary dummy project to warm up common caches
 WORKDIR /tmp/project_bootstrap_cache_warm
@@ -92,6 +109,9 @@ COPY --chown=${USERNAME}:${USERNAME} src/ ./src/
 COPY --chown=${USERNAME}:${USERNAME} .devcontainer/cache-warmup.sh /usr/local/bin/cache-warmup.sh
 RUN chmod +x /usr/local/bin/cache-warmup.sh && \
     /usr/local/bin/cache-warmup.sh
+
+# Install performance-focused cargo extensions for runtime development speed
+RUN cargo install --locked cargo-watch cargo-nextest cargo-expand sccache --quiet || echo "Some cargo tools failed to install, continuing..."
 
 # Clean up dummy project
 WORKDIR /home/${USERNAME}
@@ -108,20 +128,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     sudo \
     procps \
-    # Add lld if you plan to use it via RUSTFLAGS
-    # lld \
+    lld \
+    hyperfine \
+    fd-find \
+    ripgrep \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && PATH="/root/.local/bin:$PATH" uv tool install yt-dlp \
+    && curl -sfL https://direnv.net/install.sh | bash \
+    && mv /usr/local/sbin/direnv /usr/local/bin/direnv \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Copy the entire Nix store (contains all dependencies like devbox, direnv installed by root)
+# Copy the entire Nix store (contains all dependencies like direnv installed by root)
 COPY --from=nix_installer /nix /nix
+
+# Copy devbox binary from global_tools stage
+COPY --from=global_tools /usr/local/bin/devbox /usr/local/bin/devbox
+RUN chmod 755 /usr/local/bin/devbox && chown root:root /usr/local/bin/devbox
 
 # Copy pre-installed Rust toolchain and Cargo caches from the cache_warmer stage
 COPY --from=cache_warmer --chown=${USERNAME}:${USERNAME} /home/${USERNAME}/.rustup /home/${USERNAME}/.rustup
 COPY --from=cache_warmer --chown=${USERNAME}:${USERNAME} /home/${USERNAME}/.cargo /home/${USERNAME}/.cargo
 
+# Copy pre-configured direnv allowlist to reduce startup direnv operations
+COPY --from=cache_warmer --chown=${USERNAME}:${USERNAME} /home/${USERNAME}/.local/share/direnv/allow /home/${USERNAME}/.local/share/direnv/allow
+
 # Setup vscode user and sudoers (ensure this matches base image or is correctly set)
 RUN echo "${USERNAME} ALL=(root) NOPASSWD:ALL" > "/etc/sudoers.d/${USERNAME}" \
     && chmod 0440 "/etc/sudoers.d/${USERNAME}"
+
+# Configure Nix store permissions for vscode user
+RUN if ! getent group nixbld >/dev/null; then groupadd -r nixbld; fi && \
+    chgrp -R nixbld /nix/var/nix/db && \
+    chmod -R g+w /nix/var/nix/db && \
+    usermod -aG nixbld "${USERNAME}"
 
 # Configure Git system-wide to trust the workspace directory
 # This prevents "dubious ownership" errors when Git operations run in VS Code
@@ -153,13 +192,15 @@ USER ${USERNAME}
 
 # Set up environment variables for the vscode user
 # Path order: User's Nix profile, System Nix profile, User's Cargo, original PATH
-ENV PATH="/home/${USERNAME}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/home/${USERNAME}/.cargo/bin:${PATH}"
+ENV PATH="/home/${USERNAME}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/home/${USERNAME}/.cargo/bin:/usr/local/bin:/root/.local/bin:${PATH}"
 ENV CARGO_HOME="/home/${USERNAME}/.cargo"
 ENV RUSTUP_HOME="/home/${USERNAME}/.rustup"
 # DEVBOX_GLOBAL_PROFILE might be set by Devbox automatically, but explicitly setting it can help
 ENV DEVBOX_GLOBAL_PROFILE="/home/${USERNAME}/.local/share/devbox/global/default"
 # Ensure direnv can find its data dir if it doesn't default to XDG_DATA_HOME
 ENV XDG_DATA_HOME="/home/${USERNAME}/.local/share"
+# Configure sccache directory for when it's available
+ENV SCCACHE_DIR="/home/${USERNAME}/.cache/sccache"
 
 WORKDIR /workspaces
 

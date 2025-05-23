@@ -53,18 +53,25 @@ docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
 
 | Script                            | Description                               |
 | --------------------------------- | ----------------------------------------- |
-| `test`                            | `cargo test --all-targets --all-features` |
-| `test-release`                    | `cargo test --all-targets --all-features --release` |
+| `test`                            | `cargo nextest run --all-targets --all-features` |
+| `test-e2e`                        | Integration tests with `--include-ignored` |
+| `test-e2e-real`                   | Real E2E tests with `yt-dlp` (requires `real-e2e` feature) |
+| `test-release`                    | `cargo nextest run --all-targets --all-features --release` |
 | `build`                           | `cargo build --release`                   |
 | `build-debug`                     | `cargo build`                            |
+| `install`                         | `cargo install --path . --force` (install YTP locally) |
+| `config-validate`                 | Run `ytp_config_validate` binary          |
+| `schema`                          | Generate JSON schema (with `schema` feature) |
 | `clippy`                          | `cargo clippy --all-targets --all-features -- -D warnings` |
 | `fmt`                             | `cargo fmt --all`                        |
 | `fmt_check`                       | `cargo fmt --all -- --check`              |
 | `bench`                           | `cargo bench`                            |
 | `doc`                             | `cargo doc --no-deps --open`             |
 | `clean`                           | `cargo clean`                            |
+| `ytp`                             | `cargo run --` (run YTP from source)     |
+| `ytp-dry`                         | `cargo run -- --dry-run` (test YTP commands) |
 | `ci`                              | Complete CI pipeline (fmt + clippy + test + build) |
-| `perform_initial_project_setup`   | `cargo fetch` to prewarm crates.io cache  |
+| `perform_initial_project_setup`   | `cargo fetch` to prewarm YTP dependencies |
 
 ### 🎨 VS Code Integration
 

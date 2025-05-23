@@ -1,64 +1,47 @@
+// See https://go.microsoft.com/fwlink/?linkid=2089498 for more configuration options
 {
-  "name": "YTP Dev Env (Rust 1.86)",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  "features": {
-    "ghcr.io/devcontainers/features/nix:1": { "enableFlakes": true },
-    "ghcr.io/devcontainers-contrib/features/direnv:1": { "version": "latest" }
-  },
-  "containerEnv": {
-    "DEBIAN_FRONTEND": "noninteractive"
-  },
-  "onCreateCommand": "echo '[OnCreate] initial environment ready.'",
-  "postCreateCommand": "bash -eux .devcontainer/postCreate.sh \"$PWD\"",
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "rust-analyzer.cargo.features": "all",
-        "rust-analyzer.checkOnSave.command": "clippy",
-        "rust-analyzer.checkOnSave.allTargets": true,
-        "rust-analyzer.cargo.loadOutDirsFromCheck": true,
-        "rust-analyzer.procMacro.enable": true,
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-          "source.fixAll": "explicit"
-        },
-        "git.autofetch": true,
-        "files.watcherExclude": {
-          "**/target/**": true,
-          "**/.cargo/**": true
-        },
-        "search.exclude": {
-          "**/target": true,
-          "**/Cargo.lock": true
-        },
-        "lldb.displayFormat": "auto",
-        "lldb.showDisassembly": "auto"
-      },
-      "extensions": [
-        "rust-lang.rust-analyzer",
-        "tamasfe.even-better-toml",
-        "serayuzgur.crates",
-        "vadimcn.vscode-lldb",
-        "usernamehw.errorlens",
-        "eamodio.gitlens",
-        "EditorConfig.EditorConfig",
-        "ms-azuretools.vscode-docker",
-        "ms-vscode.test-adapter-converter",
-        "hbenl.vscode-test-explorer"
-      ]
-    }
-  },
-  "remoteUser": "vscode",
-  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-  "mounts": [
-    "source=${env:HOME}${env:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
-    "source=ytp-devbox-global-cache,target=/home/vscode/.local/share/devbox/global,type=volume",
-    "source=ytp-cargo-home-cache,target=/home/vscode/.cargo,type=volume",
-    "source=ytp-rustup-home-cache,target=/home/vscode/.rustup,type=volume"
-  ]
+	"name": "YTP Devcontainer",
+	"image": "ytp-devcontainer:test",
+	"features": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"vadimcn.vscode-lldb",
+				"tamasfe.even-better-toml",
+				"serayuzgur.crates",
+				"usernamehw.errorlens",
+				"eamodio.gitlens",
+				"ms-azuretools.vscode-docker",
+				"ms-vscode.test-adapter-converter",
+				"hbenl.vscode-test-explorer"
+			],
+			"settings": {
+				"rust-analyzer.checkOnSave.command": "clippy",
+				"rust-analyzer.check.command": "clippy",
+				"rust-analyzer.cargo.features": "all",
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "rust-lang.rust-analyzer",
+				"files.exclude": {
+					"**/.git": true,
+					"**/.DS_Store": true,
+					"**/node_modules": true,
+					"target/": true,
+					".devbox/": true
+				},
+				"search.exclude": {
+					"target/": true,
+					".devbox/": true,
+					"**/*.rlib": true
+				}
+			}
+		}
+	},
+	"postCreateCommand": ".devcontainer/postCreate.sh",
+	"mounts": [
+		"source=ytp-devcontainer-cargo-cache,target=/home/vscode/.cargo,type=volume",
+		"source=ytp-devcontainer-rustup-cache,target=/home/vscode/.rustup,type=volume",
+		"source=ytp-devcontainer-devbox-cache,target=/home/vscode/.local/share/devbox,type=volume"
+	],
+	"remoteUser": "vscode"
 } 
