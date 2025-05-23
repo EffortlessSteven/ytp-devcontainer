@@ -54,10 +54,32 @@ docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.2
 | Script                            | Description                               |
 | --------------------------------- | ----------------------------------------- |
 | `test`                            | `cargo test --all-targets --all-features` |
+| `test-release`                    | `cargo test --all-targets --all-features --release` |
 | `build`                           | `cargo build --release`                   |
+| `build-debug`                     | `cargo build`                            |
 | `clippy`                          | `cargo clippy --all-targets --all-features -- -D warnings` |
+| `fmt`                             | `cargo fmt --all`                        |
 | `fmt_check`                       | `cargo fmt --all -- --check`              |
+| `bench`                           | `cargo bench`                            |
+| `doc`                             | `cargo doc --no-deps --open`             |
+| `clean`                           | `cargo clean`                            |
+| `ci`                              | Complete CI pipeline (fmt + clippy + test + build) |
 | `perform_initial_project_setup`   | `cargo fetch` to prewarm crates.io cache  |
+
+### 🎨 VS Code Integration
+
+| Category | Extensions |
+| -------- | ---------- |
+| **Rust Development** | `rust-lang.rust-analyzer`, `tamasfe.even-better-toml`, `serayuzgur.crates` |
+| **Debugging** | `vadimcn.vscode-lldb`, `ms-vscode.test-adapter-converter`, `hbenl.vscode-test-explorer` |
+| **Code Quality** | `usernamehw.errorlens` |
+| **Git & Docker** | `eamodio.gitlens`, `ms-azuretools.vscode-docker` |
+
+**Optimized Settings:**
+- Format on save enabled
+- Clippy as default check command  
+- rust-analyzer with full feature support
+- Smart file exclusions for performance
 
 ---
 

@@ -18,9 +18,26 @@
     "scripts": {
       "perform_initial_project_setup": "echo '[Devbox Script: perform_initial_project_setup] Fetching Rust dependencies...' && cargo fetch && echo '[Devbox Script: perform_initial_project_setup] Dependencies fetched.'",
       "test": "cargo test --all-targets --all-features",
+      "test-release": "cargo test --all-targets --all-features --release",
       "build": "cargo build --release",
+      "build-debug": "cargo build",
       "clippy": "cargo clippy --all-targets --all-features -- -D warnings",
-      "fmt_check": "cargo fmt --all -- --check"
+      "fmt": "cargo fmt --all",
+      "fmt_check": "cargo fmt --all -- --check",
+      "bench": "cargo bench",
+      "doc": "cargo doc --no-deps --open",
+      "clean": "cargo clean",
+      "ci": [
+        "echo '[CI] Running format check...'",
+        "cargo fmt --all -- --check",
+        "echo '[CI] Running clippy...'", 
+        "cargo clippy --all-targets --all-features -- -D warnings",
+        "echo '[CI] Running tests...'",
+        "cargo test --all-targets --all-features",
+        "echo '[CI] Building release...'",
+        "cargo build --release",
+        "echo '[CI] All checks passed!'"
+      ]
     }
   }
 } 
