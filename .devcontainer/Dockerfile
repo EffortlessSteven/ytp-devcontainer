@@ -122,23 +122,46 @@ RUN chmod +x /usr/local/bin/cache-warmup.sh && \
 
 # Install performance-focused cargo extensions for runtime development speed
 # Ensure platform equivalency - all tools available on all architectures
-RUN set -e; \
-    ARCH=$(uname -m); \
+RUN ARCH=$(uname -m); \
     echo "Installing cargo tools for $ARCH (ensuring platform equivalency)"; \
-    # cargo-nextest - use pre-compiled binary on x86_64, compile on others
+    \
+    # Function to install tool with error handling
+    install_cargo_tool() { \
+        local tool_name="$1"; \
+        local install_args="$2"; \
+        echo "Installing $tool_name..."; \
+        if cargo install $install_args "$tool_name" --quiet; then \
+            echo "✅ $tool_name installed successfully"; \
+        else \
+            echo "❌ $tool_name installation failed (exit code: $?)"; \
+            echo "   This tool will be unavailable but container build will continue"; \
+            return 1; \
+        fi; \
+    }; \
+    \
+    # cargo-nextest - try pre-compiled binary on x86_64, compile on others
     if [ "$ARCH" = "x86_64" ]; then \
-        echo "Using pre-compiled cargo-nextest for x86_64..."; \
-        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME}/bin || \
-        { echo "Pre-compiled install failed, compiling from source..."; cargo install --locked cargo-nextest --quiet; }; \
+        echo "Attempting pre-compiled cargo-nextest for x86_64..."; \
+        if curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME}/bin 2>/dev/null; then \
+            echo "✅ cargo-nextest (pre-compiled) installed successfully"; \
+        else \
+            echo "Pre-compiled install failed, compiling from source..."; \
+            install_cargo_tool "cargo-nextest" "--locked"; \
+        fi; \
     else \
         echo "Compiling cargo-nextest from source for $ARCH..."; \
-        cargo install --locked cargo-nextest --quiet; \
+        install_cargo_tool "cargo-nextest" "--locked"; \
     fi && \
-    # cargo-watch and cargo-expand - compile from source (lightweight, fast on all platforms)
-    echo "Installing cargo-watch and cargo-expand..." && \
-    cargo install --locked cargo-watch --quiet && \
-    cargo install --locked cargo-expand --quiet && \
-    echo "All cargo tools installed successfully for $ARCH"
+    \
+    # Install remaining tools with individual error handling
+    echo "Installing additional cargo tools..." && \
+    install_cargo_tool "cargo-watch" "--locked"; \
+    install_cargo_tool "cargo-expand" "--locked"; \
+    \
+    # Verify what's actually installed
+    echo "=== Installed Cargo Tools Summary ==="; \
+    ls -la ${CARGO_HOME}/bin/cargo-* 2>/dev/null || echo "No cargo tools found in bin directory"; \
+    echo "====================================="
 
 # Clean up dummy project
 WORKDIR /home/${USERNAME}
