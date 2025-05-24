@@ -121,11 +121,24 @@ RUN chmod +x /usr/local/bin/cache-warmup.sh && \
     /usr/local/bin/cache-warmup.sh
 
 # Install performance-focused cargo extensions for runtime development speed
-# Install essential tools individually with fallback for cross-platform compatibility
-RUN cargo install --locked cargo-nextest --quiet || echo "cargo-nextest install failed, continuing..." && \
-    cargo install --locked cargo-watch --quiet || echo "cargo-watch install failed, continuing..." && \
-    cargo install --locked cargo-expand --quiet || echo "cargo-expand install failed, continuing..." && \
-    echo "Cargo tools installation attempted (some may have failed on this platform)"
+# Ensure platform equivalency - all tools available on all architectures
+RUN set -e; \
+    ARCH=$(uname -m); \
+    echo "Installing cargo tools for $ARCH (ensuring platform equivalency)"; \
+    # cargo-nextest - use pre-compiled binary on x86_64, compile on others
+    if [ "$ARCH" = "x86_64" ]; then \
+        echo "Using pre-compiled cargo-nextest for x86_64..."; \
+        curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME}/bin || \
+        { echo "Pre-compiled install failed, compiling from source..."; cargo install --locked cargo-nextest --quiet; }; \
+    else \
+        echo "Compiling cargo-nextest from source for $ARCH..."; \
+        cargo install --locked cargo-nextest --quiet; \
+    fi && \
+    # cargo-watch and cargo-expand - compile from source (lightweight, fast on all platforms)
+    echo "Installing cargo-watch and cargo-expand..." && \
+    cargo install --locked cargo-watch --quiet && \
+    cargo install --locked cargo-expand --quiet && \
+    echo "All cargo tools installed successfully for $ARCH"
 
 # Clean up dummy project
 WORKDIR /home/${USERNAME}
