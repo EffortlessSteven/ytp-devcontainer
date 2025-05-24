@@ -73,6 +73,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}-rust${{ env.RUST_VERSION_TAG_PART }}
             type=raw,value=latest-rust${{ env.RUST_VERSION_TAG_PART }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YY.MM.DD'}}-rust${{ env.RUST_VERSION_TAG_PART }},enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix={{date 'YY.MM.DD'}}-,suffix=-rust${{ env.RUST_VERSION_TAG_PART }},enable=${{ github.ref == 'refs/heads/main' }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Build and push Docker image
