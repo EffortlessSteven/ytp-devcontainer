@@ -21,14 +21,14 @@ This image is tuned for fast local iteration, reproducible CI environments, and 
 ## 🐳 Image Tags
 
 ```bash
-ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3   # Stable (Rust 1.86, batteries-included)
+ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5   # Stable (Rust 1.86, batteries-included)
 ghcr.io/effortlesssteven/ytp-devcontainer:latest  # Mutable dev
 ```
 
 Pull the image:
 
 ```bash
-docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
+docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5
 ```
 
 > All images run as non-root (`vscode` user) and are built for Dev Containers and CI.
@@ -102,7 +102,7 @@ docker pull ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
 ```jsonc
 // .devcontainer/devcontainer.json
 {
-  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3"
+  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5"
 }
 ```
 
@@ -120,7 +120,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
+      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5
     steps:
       - uses: actions/checkout@v4
       - run: devbox run test
@@ -132,7 +132,7 @@ jobs:
 
 ```jsonc
 {
-  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3",
+  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5",
   "customizations": {
     "vscode": {
       "extensions": [

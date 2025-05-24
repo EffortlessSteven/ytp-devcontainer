@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     sudo \
     procps \
+    build-essential \
+    pkg-config \
     # Add any other absolutely essential system tools needed *before* Nix
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +31,12 @@ ARG USERNAME=vscode
 
 # Install Nix (using Determinate Systems installer for robustness)
 # This runs as root
-RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux --init none --no-confirm
+# Use --extra-conf to handle ARM64 seccomp issues in GitHub Actions
+RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux \
+    --init none \
+    --no-confirm \
+    --extra-conf "filter-syscalls = false" \
+    --extra-conf "sandbox = false"
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 
 # Basic Nix configuration (as root)
@@ -84,6 +91,9 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
 # Create optimized Cargo configuration for fast builds and operations
 RUN mkdir -p "${CARGO_HOME}" && \
     echo '[build]' > "${CARGO_HOME}/config.toml" && \
+    echo '# Use lld on x86_64, default linker on other architectures for compatibility' >> "${CARGO_HOME}/config.toml" && \
+    echo '[target.x86_64-unknown-linux-gnu]' >> "${CARGO_HOME}/config.toml" && \
+    echo 'linker = "clang"' >> "${CARGO_HOME}/config.toml" && \
     echo 'rustflags = ["-C", "link-arg=-fuse-ld=lld"]' >> "${CARGO_HOME}/config.toml" && \
     echo '' >> "${CARGO_HOME}/config.toml" && \
     echo '[profile.dev]' >> "${CARGO_HOME}/config.toml" && \
@@ -111,7 +121,11 @@ RUN chmod +x /usr/local/bin/cache-warmup.sh && \
     /usr/local/bin/cache-warmup.sh
 
 # Install performance-focused cargo extensions for runtime development speed
-RUN cargo install --locked cargo-watch cargo-nextest cargo-expand sccache --quiet || echo "Some cargo tools failed to install, continuing..."
+# Install essential tools individually with fallback for cross-platform compatibility
+RUN cargo install --locked cargo-nextest --quiet || echo "cargo-nextest install failed, continuing..." && \
+    cargo install --locked cargo-watch --quiet || echo "cargo-watch install failed, continuing..." && \
+    cargo install --locked cargo-expand --quiet || echo "cargo-expand install failed, continuing..." && \
+    echo "Cargo tools installation attempted (some may have failed on this platform)"
 
 # Clean up dummy project
 WORKDIR /home/${USERNAME}
@@ -128,6 +142,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     sudo \
     procps \
+    build-essential \
+    clang \
     lld \
     hyperfine \
     fd-find \

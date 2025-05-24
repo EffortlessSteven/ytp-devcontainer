@@ -6,7 +6,7 @@
 ```jsonc
 {
   "name": "YTP CLI Development",
-  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3",
+  "image": "ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5",
   
   // Optional: Project-specific environment variables
   "containerEnv": {
@@ -98,7 +98,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3
+      image: ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5
     steps:
       - uses: actions/checkout@v4
       - name: Run CI pipeline
@@ -165,7 +165,7 @@ devbox run build
 
 ## 8. Base Image Contents
 
-For reference, the base image (`ghcr.io/effortlesssteven/ytp-devcontainer:0.1.3`) includes:
+For reference, the base image (`ghcr.io/effortlesssteven/ytp-devcontainer:0.1.5`) includes:
 
 **Pre-installed Tools:**
 - Rust 1.86.0 toolchain with clippy, rustfmt, rust-analyzer
