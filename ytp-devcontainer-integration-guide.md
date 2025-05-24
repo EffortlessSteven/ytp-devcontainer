@@ -1,4 +1,4 @@
-# YTP CLI → ytp-devcontainer Migration Guide
+# YTP CLI: ytp-devcontainer Migration Guide
 
 ## Technical Status (v0.1.6)
 
