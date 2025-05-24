@@ -70,6 +70,13 @@ FROM global_tools AS cache_warmer
 ARG USERNAME=vscode
 ARG RUST_TOOLCHAIN_VERSION="1.86.0" # Ensure this matches the rust-toolchain.toml in your project
 
+# Install build tools needed for cargo compilation (as root)
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang \
+    lld \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
