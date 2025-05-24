@@ -26,6 +26,6 @@ echo "[cache-warmup.sh] Pre-warming rust-analyzer with YTP-specific caches..."
 timeout 45s cargo check --message-format=json --all-features > /dev/null 2>&1 || echo "[cache-warmup.sh] rust-analyzer cache warm timeout (expected)"
 
 echo "[cache-warmup.sh] Testing YTP binary compilation for sccache warming..."
-timeout 60s cargo build --bin ytp || echo "[cache-warmup.sh] binary build timeout (expected, cache warmed)"
+timeout 60s cargo build --bin ytp-devcontainer || echo "[cache-warmup.sh] binary build timeout (expected, cache warmed)"
 
 echo "[cache-warmup.sh] YTP-specific cache warming complete."
